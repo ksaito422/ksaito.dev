@@ -1,0 +1,5 @@
+# Blog
+
+## setup
+
+- hugo server
