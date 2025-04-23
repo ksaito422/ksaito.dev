@@ -7,6 +7,8 @@ enableRobotsTXT = true
 buildDrafts = false
 buildFuture = false
 buildExpired = false
+enableEmoji = true
+enableInlineShortcodes = true
 
 [minify]
   disableXML = true
@@ -88,3 +90,6 @@ buildExpired = false
 
 [outputs]
   home = ['HTML', 'RSS', 'JSON']
+
+[markup.highlight]
+  lineNos = true
