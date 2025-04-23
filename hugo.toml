@@ -1,14 +1,12 @@
-baseURL = 'https://example.org/'
+baseURL = ''
 languageCode = 'ja-jp'
+pagenate = 5
 title = 'ksaito.dev'
 theme = 'PaperMod'
 enableRobotsTXT = true
 buildDrafts = false
 buildFuture = false
 buildExpired = false
-enableEmoji = true
-enableInlineShortcodes = true
-linenos = true
 
 [minify]
   disableXML = true
@@ -90,6 +88,3 @@ linenos = true
 
 [outputs]
   home = ['HTML', 'RSS', 'JSON']
-
-[markup.highlight]
-lineNos = true
