@@ -55,8 +55,7 @@ enableInlineShortcodes = true
   enabled = false
 
 [params.homeInfoParams]
-  Title = 'ksaito.dev'
-  Content = 'Hello world!!'
+  Title = 'ksaito blog'
 
 [[params.socialIcons]]
   name = 'github'
