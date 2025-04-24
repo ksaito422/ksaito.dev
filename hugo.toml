@@ -1,4 +1,5 @@
-baseURL = ''
+baseURL = "https://dev.saito.page"
+publishDir = "docs"
 languageCode = 'ja-jp'
 pagenate = 5
 title = 'ksaito.dev'

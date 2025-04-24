@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://dev.saito.page/posts/2023-11-27/</loc>
+    <lastmod>2023-11-27T00:00:00+09:00</lastmod>
+  </url><url>
+    <loc>https://dev.saito.page/</loc>
+    <lastmod>2023-11-27T00:00:00+09:00</lastmod>
+  </url><url>
+    <loc>https://dev.saito.page/posts/</loc>
+    <lastmod>2023-11-27T00:00:00+09:00</lastmod>
+  </url><url>
+    <loc>https://dev.saito.page/tags/rails/</loc>
+    <lastmod>2023-11-27T00:00:00+09:00</lastmod>
+  </url><url>
+    <loc>https://dev.saito.page/tags/</loc>
+    <lastmod>2023-11-27T00:00:00+09:00</lastmod>
+  </url><url>
+    <loc>https://dev.saito.page/posts/2023-11-12/</loc>
+    <lastmod>2023-11-12T16:57:00+09:00</lastmod>
+  </url><url>
+    <loc>https://dev.saito.page/tags/googlecloud/</loc>
+    <lastmod>2023-11-12T16:57:00+09:00</lastmod>
+  </url><url>
+    <loc>https://dev.saito.page/posts/2023-08-07/</loc>
+    <lastmod>2023-08-07T00:00:00+09:00</lastmod>
+  </url><url>
+    <loc>https://dev.saito.page/archives/</loc>
+  </url><url>
+    <loc>https://dev.saito.page/categories/</loc>
+  </url><url>
+    <loc>https://dev.saito.page/search/</loc>
+  </url>
+</urlset>

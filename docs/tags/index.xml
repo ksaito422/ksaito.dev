@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Tags on ksaito.dev</title>
+    <link>https://dev.saito.page/tags/</link>
+    <description>Recent content in Tags on ksaito.dev</description>
+    <generator>Hugo -- 0.146.6</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Mon, 27 Nov 2023 00:00:00 +0900</lastBuildDate>
+    <atom:link href="https://dev.saito.page/tags/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Rails</title>
+      <link>https://dev.saito.page/tags/rails/</link>
+      <pubDate>Mon, 27 Nov 2023 00:00:00 +0900</pubDate>
+      <guid>https://dev.saito.page/tags/rails/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>GoogleCloud</title>
+      <link>https://dev.saito.page/tags/googlecloud/</link>
+      <pubDate>Sun, 12 Nov 2023 16:57:00 +0900</pubDate>
+      <guid>https://dev.saito.page/tags/googlecloud/</guid>
+      <description></description>
+    </item>
+  </channel>
+</rss>
