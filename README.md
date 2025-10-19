@@ -11,6 +11,11 @@ hugo server -D
 ```
 hugo new posts/$(date "+%Y-%m-%d").md
 ```
+公開設定
+```
+draft = true # 下書きのため公開しない
+draft = false # 公開する
+```
 
 ## when publishing
 ビルド
