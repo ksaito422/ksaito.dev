@@ -6,8 +6,64 @@
     <description>Recent content on ksaito.dev</description>
     <generator>Hugo -- 0.150.0</generator>
     <language>ja-jp</language>
-    <lastBuildDate>Mon, 20 Oct 2025 11:33:47 +0900</lastBuildDate>
+    <lastBuildDate>Tue, 21 Oct 2025 08:34:42 +0900</lastBuildDate>
     <atom:link href="https://dev.saito.page/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>rspec-mocksメモ</title>
+      <link>https://dev.saito.page/posts/2025-10-21/</link>
+      <pubDate>Tue, 21 Oct 2025 08:34:42 +0900</pubDate>
+      <guid>https://dev.saito.page/posts/2025-10-21/</guid>
+      <description>&lt;p&gt;モックに使えるメソッドのメモ。
+この記事ではスタブ、ダブル、モックなどのワードを厳密に区別しません。&lt;/p&gt;
+&lt;p&gt;ここに書いている内容はほとんど公式ドキュメントからの抜粋です。
+&lt;a href=&#34;https://rspec.info/features/3-12/rspec-mocks/&#34;&gt;https://rspec.info/features/3-12/rspec-mocks/&lt;/a&gt;&lt;/p&gt;
+&lt;h2 id=&#34;double&#34;&gt;double&lt;/h2&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;
+&lt;table style=&#34;border-spacing:0;padding:0;margin:0;border:0;&#34;&gt;&lt;tr&gt;&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;;width:100%&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-ruby&#34; data-lang=&#34;ruby&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;dbl &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; double(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Hoge&amp;#34;&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;&lt;code&gt;double&lt;/code&gt;メソッドでダブルオブジェクトを作成できます。
+これだけではメソッド呼び出しに対応できないので、&lt;code&gt;receive&lt;/code&gt;メソッドで振る舞いを定義します。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;
+&lt;table style=&#34;border-spacing:0;padding:0;margin:0;border:0;&#34;&gt;&lt;tr&gt;&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f&#34;&gt;1
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f&#34;&gt;2
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f&#34;&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;;width:100%&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-ruby&#34; data-lang=&#34;ruby&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;dbl &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; double(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Hoge&amp;#34;&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;allow(dbl)&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;to receive(&lt;span style=&#34;color:#e6db74&#34;&gt;:foo&lt;/span&gt;)&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;and_return(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;bar&amp;#34;&lt;/span&gt;)&lt;span style=&#34;color:#e6db74&#34;&gt;`
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;dbl.foo # =&amp;gt; &amp;#34;bar&amp;#34;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;doubleは実オブジェクトに存在しないメソッドも定義できます。
+これを避けたい場合は、次に上げるinstance_doubleが使えます。&lt;/p&gt;
+&lt;h2 id=&#34;instance_double&#34;&gt;instance_double&lt;/h2&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;
+&lt;table style=&#34;border-spacing:0;padding:0;margin:0;border:0;&#34;&gt;&lt;tr&gt;&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f&#34;&gt;1
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f&#34;&gt;2
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f&#34;&gt;3
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f&#34;&gt;4
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f&#34;&gt;5
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f&#34;&gt;6
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;;width:100%&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-ruby&#34; data-lang=&#34;ruby&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;dbl &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; instance_double(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;String&amp;#34;&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;allow(dbl)&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;to receive(&lt;span style=&#34;color:#e6db74&#34;&gt;:length&lt;/span&gt;)&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;and_return(&lt;span style=&#34;color:#ae81ff&#34;&gt;5&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;dbl&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;length &lt;span style=&#34;color:#75715e&#34;&gt;# =&amp;gt; 5&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# Stringオブジェクトに存在しないので、エラーになる&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;allow(dbl)&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;to receive(&lt;span style=&#34;color:#e6db74&#34;&gt;:hoge&lt;/span&gt;)&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;and_return(&lt;span style=&#34;color:#ae81ff&#34;&gt;5&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;実オブジェクトの一部の振る舞いを差し替えたいことが多いと思うので、基本的にはinstance_doubleを使うのが良いでしょう。
+クラスメソッドに対しては、&lt;code&gt;class_double&lt;/code&gt;があります。&lt;/p&gt;</description>
+    </item>
     <item>
       <title>RSpecのdefine_negated_matcherでカスタムマッチャーの否定形を定義する</title>
       <link>https://dev.saito.page/posts/2025-10-20/</link>
