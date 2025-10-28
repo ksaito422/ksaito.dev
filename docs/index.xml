@@ -6,8 +6,52 @@
     <description>Recent content on ksaito.dev</description>
     <generator>Hugo -- 0.150.0</generator>
     <language>ja-jp</language>
-    <lastBuildDate>Tue, 21 Oct 2025 08:34:42 +0900</lastBuildDate>
+    <lastBuildDate>Tue, 28 Oct 2025 08:40:17 +0900</lastBuildDate>
     <atom:link href="https://dev.saito.page/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>ファイル名を判定する際は正規化に気をつける</title>
+      <link>https://dev.saito.page/posts/2025-10-28/</link>
+      <pubDate>Tue, 28 Oct 2025 08:40:17 +0900</pubDate>
+      <guid>https://dev.saito.page/posts/2025-10-28/</guid>
+      <description>&lt;p&gt;ブラウザからアップロードされたファイルを、とある命名規則に沿っているか判定する処理を実装していました。&lt;/p&gt;
+&lt;p&gt;しかし、MacとWindowsで一貫した挙動にならず、悩まされた結果、unicode正規化の問題であることがわかりました。&lt;/p&gt;
+&lt;p&gt;この記事では、その問題と解決策について共有します。&lt;/p&gt;
+&lt;h2 id=&#34;ハマった事象&#34;&gt;ハマった事象&lt;/h2&gt;
+&lt;p&gt;正規表現でファイル名の判定を書いていたのですが、簡単のために比較表現で説明します。&lt;/p&gt;
+&lt;p&gt;下記のような判定をしていたのですが、後者の判定結果がfalseを返してしまいました。&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;&amp;#34;ペ&amp;#34; == &amp;#34;ペ&amp;#34;
+=&amp;gt; true
+
+&amp;#34;ペ&amp;#34; == &amp;#34;ペ&amp;#34;
+=&amp;gt; false
+&lt;/code&gt;&lt;/pre&gt;&lt;h2 id=&#34;原因&#34;&gt;原因&lt;/h2&gt;
+&lt;p&gt;MacのFinderでは、ファイル名に含まれる文字がunicode正規化のNFD（Normalization Form D）形式で保存されます。
+しかし、エディタに入力した文字はNFC（Normalization Form C）形式であるため、同じ見た目の文字列でもバイト列が異なり、不一致となってしまいます。&lt;/p&gt;
+&lt;p&gt;false判定になった文字列で、それぞれの文字コードを調べると以下のようになります。&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;&amp;#34;\\u%04x&amp;#34; % &amp;#34;ペ&amp;#34;.ord
+=&amp;gt; &amp;#34;\\u30da&amp;#34;
+
+&amp;#34;\\u%04x&amp;#34; % &amp;#34;ペ&amp;#34;.ord
+=&amp;gt; &amp;#34;\\u30d8&amp;#34;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;このようにコードポイントが異なるため、等価ではないと判断されてしまいます。&lt;/p&gt;
+&lt;p&gt;後者の(&lt;code&gt;\u30d8&lt;/code&gt;)は、Finder上でフォルダを作成したときに生成される&amp;quot;ペ&amp;quot;の文字コードで、これは基底文字&amp;quot;ヘ&amp;quot;(&lt;code&gt;\u30d8&lt;/code&gt;)と結合文字&amp;quot;゜&amp;quot;(&lt;code&gt;\u309c&lt;/code&gt;)の組み合わせで表現されています。　&lt;/p&gt;
+&lt;h2 id=&#34;解決策&#34;&gt;解決策&lt;/h2&gt;
+&lt;p&gt;このようにコードポイントの違いで比較結果が期待通りにならない場合、文字列を正規化した上で比較を行うことで、解決できます。&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;pe = &amp;#34;ペ&amp;#34;
+&amp;#34;\\u%04x&amp;#34; % pe.ord
+=&amp;gt; &amp;#34;\\u30d8&amp;#34;
+&amp;#34;ペ&amp;#34; == pe
+=&amp;gt; false
+&amp;#34;ペ&amp;#34; == pe.unicode_normalize(:nfc)
+=&amp;gt; true
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;このようにRubyで用意されている&lt;code&gt;unicode_normalize&lt;/code&gt;メソッドを使用して、NFC形式に正規化することで、期待通りの比較が可能になります。&lt;/p&gt;
+&lt;p&gt;MacのファイルシステムではNFD形式で保存されるため、ファイル名を扱う際にはNFC形式に正規化してから比較や処理を行うことをお勧めします。&lt;/p&gt;
+&lt;h2 id=&#34;unicode正規化とは&#34;&gt;unicode正規化とは&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://ja.wikipedia.org/wiki/Unicode%E6%AD%A3%E8%A6%8F%E5%8C%96&#34;&gt;Unicode正規化wiki&lt;/a&gt;に詳しく記載されていますが、NFDとNFCの違いを簡単に説明します。&lt;/p&gt;
+&lt;p&gt;まず、合成と分解という概念があって、NFDは視覚的・意味的に等価な文字列に分解し結合文字として扱います。
+一方、NFCはNFDのように分解したあと視覚的・意味的に等価な文字列を合成し合成文字として扱います。&lt;/p&gt;
+&lt;p&gt;このように視覚的には違いがわからなくても、&amp;ldquo;ヘ&amp;rdquo;+&amp;quot;゜&amp;ldquo;の結合文字と&amp;quot;ペ&amp;quot;の合成文字は異なるコードポイントとして扱われるため、比較結果が異なってしまいます。&lt;/p&gt;</description>
+    </item>
     <item>
       <title>rspec-mocksメモ</title>
       <link>https://dev.saito.page/posts/2025-10-21/</link>
