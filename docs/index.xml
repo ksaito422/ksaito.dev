@@ -310,7 +310,7 @@
 listsは変更されて、2が含まれなくなることを検証できます。&lt;/p&gt;</description>
     </item>
     <item>
-      <title>Rspecで配列を検証するときのマッチャーの使い分け</title>
+      <title>RSpecで配列を検証するときのマッチャーの使い分け</title>
       <link>https://dev.saito.page/posts/2025-10-19/</link>
       <pubDate>Sun, 19 Oct 2025 10:19:05 +0900</pubDate>
       <guid>https://dev.saito.page/posts/2025-10-19/</guid>
