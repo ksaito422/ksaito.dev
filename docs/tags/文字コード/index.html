@@ -14,7 +14,7 @@ pe = "ペ" "\\u%04x" % pe.ord => "\\u30d8" "ペ" == pe => false "ペ" == pe.u
 MacのファイルシステムではNFD形式で保存されるため、ファイル名を扱う際にはNFC形式に正規化してから比較や処理を行うことをお勧めします。
 unicode正規化とは Unicode正規化wikiに詳しく記載されていますが、NFDとNFCの違いを簡単に説明します。
 まず、合成と分解という概念があって、NFDは視覚的・意味的に等価な文字列に分解し結合文字として扱います。 一方、NFCはNFDのように分解したあと視覚的・意味的に等価な文字列を合成し合成文字として扱います。
-このように視覚的には違いがわからなくても、“ヘ”+"゜“の結合文字と"ペ"の合成文字は異なるコードポイントとして扱われるため、比較結果が異なってしまいます。</p></div><footer class=entry-footer><span title='2025-10-28 08:40:17 +0900 JST'>2025-10-28</span>&nbsp;·&nbsp;1 min&nbsp;·&nbsp;ksaito</footer><a class=entry-link aria-label="post link to ファイル名を判定する際は正規化に気をつける" href=https://dev.saito.page/posts/2025-10-28/></a></article></main><footer class=footer><span>&copy; 2025 <a href=https://dev.saito.page/>ksaito.dev</a></span> ·
+このように視覚的には違いがわからなくても、“ヘ”+"゜“の結合文字と"ペ"の合成文字は異なるコードポイントとして扱われるため、比較結果が異なってしまいます。</p></div><footer class=entry-footer><span title='2025-10-28 08:40:17 +0900 JST'>2025-10-28</span>&nbsp;·&nbsp;1 min&nbsp;·&nbsp;ksaito</footer><a class=entry-link aria-label="post link to ファイル名を判定する際は正規化に気をつける" href=https://dev.saito.page/posts/2025-10-28/></a></article></main><footer class=footer><span>&copy; 2026 <a href=https://dev.saito.page/>ksaito.dev</a></span> ·
 <span>Powered by
 <a href=https://gohugo.io/ rel="noopener noreferrer" target=_blank>Hugo</a> &
 <a href=https://github.com/adityatelange/hugo-PaperMod/ rel=noopener target=_blank>PaperMod</a></span></footer><a href=#top aria-label="go to top" title="Go to Top (Alt + G)" class=top-link id=top-link accesskey=g><svg viewBox="0 0 12 6" fill="currentColor"><path d="M12 6H0l6-6z"/></svg>

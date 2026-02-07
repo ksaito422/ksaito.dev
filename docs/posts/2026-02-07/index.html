@@ -1,0 +1,260 @@
+<!doctype html><html lang=en dir=auto><head><meta charset=utf-8><meta http-equiv=X-UA-Compatible content="IE=edge"><meta name=viewport content="width=device-width,initial-scale=1,shrink-to-fit=no"><meta name=robots content="index, follow"><title>ActiveSupport::MessageVerifierの実装を読む | ksaito.dev</title><meta name=keywords content="rails"><meta name=description content="MessageVerifierは、RailsのActiveSupportライブラリに含まれるクラスで、データの署名と検証を行うために使用されます。これにより、データが改ざんされていないことを保証できます。以下に、ActiveSupport::MessageVerifierの実装を簡単に説明します。
+
+
+1
+2
+3
+4
+5
+6
+7
+8
+
+
+verifier = Rails.application.message_verifier(:hoge)
+token = verifier.generate('aiueo', expires_in: 1.hour)
+=> &#34;eyJfcmF...--bead...&#34;
+
+verifier.verify(token)
+=> &#34;aiueo&#34;
+verifier.verify('kakikukeko')
+=> mismatched digest (ActiveSupport::MessageVerifier::InvalidSignature)
+
+
+これがどういう仕組みなのか、実装を追いかけてみます。
+なおrails8.1.2時点のコードを参照しています。
+コードリーディング
+Rails.application.message_verifier
+Rails.application.message_verifier(:hoge)からたどります。
+
+
+ 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+
+
+def message_verifier(verifier_name)
+  message_verifiers[verifier_name] # :hogeを渡す
+end
+
+def message_verifiers
+  @message_verifiers ||=
+    ActiveSupport::MessageVerifiers.new do |salt, secret_key_base: self.secret_key_base|
+      key_generator(secret_key_base).generate_key(salt)
+    end.rotate_defaults
+end
+
+
+https://github.com/rails/rails/blob/v8.1.2/railties/lib/rails/application.rb#L238-L240
+https://github.com/rails/rails/blob/v8.1.2/railties/lib/rails/application.rb#L210-L215"><meta name=author content="ksaito"><link rel=canonical href=https://dev.saito.page/posts/2026-02-07/><link crossorigin=anonymous href=/assets/css/stylesheet.f49d66caae9ea0fd43f21f29e71a8d3e284517ed770f2aa86fa012953ad3c9ef.css integrity="sha256-9J1myq6eoP1D8h8p5xqNPihFF+13Dyqob6ASlTrTye8=" rel="preload stylesheet" as=style><link rel=icon href=https://dev.saito.page/favicon.ico><link rel=icon type=image/png sizes=16x16 href=https://dev.saito.page/favicon-16x16.png><link rel=icon type=image/png sizes=32x32 href=https://dev.saito.page/favicon-32x32.png><link rel=apple-touch-icon href=https://dev.saito.page/apple-touch-icon.png><link rel=mask-icon href=https://dev.saito.page/safari-pinned-tab.svg><meta name=theme-color content="#2e2e33"><meta name=msapplication-TileColor content="#2e2e33"><link rel=alternate hreflang=en href=https://dev.saito.page/posts/2026-02-07/><noscript><style>#theme-toggle,.top-link{display:none}</style><style>@media(prefers-color-scheme:dark){:root{--theme:rgb(29, 30, 32);--entry:rgb(46, 46, 51);--primary:rgb(218, 218, 219);--secondary:rgb(155, 156, 157);--tertiary:rgb(65, 66, 68);--content:rgb(196, 196, 197);--code-block-bg:rgb(46, 46, 51);--code-bg:rgb(55, 56, 62);--border:rgb(51, 51, 51)}.list{background:var(--theme)}.list:not(.dark)::-webkit-scrollbar-track{background:0 0}.list:not(.dark)::-webkit-scrollbar-thumb{border-color:var(--theme)}}</style></noscript><meta property="og:url" content="https://dev.saito.page/posts/2026-02-07/"><meta property="og:site_name" content="ksaito.dev"><meta property="og:title" content="ActiveSupport::MessageVerifierの実装を読む"><meta property="og:description" content="MessageVerifierは、RailsのActiveSupportライブラリに含まれるクラスで、データの署名と検証を行うために使用されます。これにより、データが改ざんされていないことを保証できます。以下に、ActiveSupport::MessageVerifierの実装を簡単に説明します。
+1 2 3 4 5 6 7 8 verifier = Rails.application.message_verifier(:hoge) token = verifier.generate('aiueo', expires_in: 1.hour) => &#34;eyJfcmF...--bead...&#34; verifier.verify(token) => &#34;aiueo&#34; verifier.verify('kakikukeko') => mismatched digest (ActiveSupport::MessageVerifier::InvalidSignature) これがどういう仕組みなのか、実装を追いかけてみます。
+なおrails8.1.2時点のコードを参照しています。
+コードリーディング Rails.application.message_verifier Rails.application.message_verifier(:hoge)からたどります。
+1 2 3 4 5 6 7 8 9 10 def message_verifier(verifier_name) message_verifiers[verifier_name] # :hogeを渡す end def message_verifiers @message_verifiers ||= ActiveSupport::MessageVerifiers.new do |salt, secret_key_base: self.secret_key_base| key_generator(secret_key_base).generate_key(salt) end.rotate_defaults end https://github.com/rails/rails/blob/v8.1.2/railties/lib/rails/application.rb#L238-L240 https://github.com/rails/rails/blob/v8.1.2/railties/lib/rails/application.rb#L210-L215"><meta property="og:locale" content="ja-jp"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2026-02-07T11:14:25+09:00"><meta property="article:modified_time" content="2026-02-07T11:14:25+09:00"><meta property="article:tag" content="Rails"><meta name=twitter:card content="summary"><meta name=twitter:title content="ActiveSupport::MessageVerifierの実装を読む"><meta name=twitter:description content="MessageVerifierは、RailsのActiveSupportライブラリに含まれるクラスで、データの署名と検証を行うために使用されます。これにより、データが改ざんされていないことを保証できます。以下に、ActiveSupport::MessageVerifierの実装を簡単に説明します。
+
+
+1
+2
+3
+4
+5
+6
+7
+8
+
+
+verifier = Rails.application.message_verifier(:hoge)
+token = verifier.generate('aiueo', expires_in: 1.hour)
+=> &#34;eyJfcmF...--bead...&#34;
+
+verifier.verify(token)
+=> &#34;aiueo&#34;
+verifier.verify('kakikukeko')
+=> mismatched digest (ActiveSupport::MessageVerifier::InvalidSignature)
+
+
+これがどういう仕組みなのか、実装を追いかけてみます。
+なおrails8.1.2時点のコードを参照しています。
+コードリーディング
+Rails.application.message_verifier
+Rails.application.message_verifier(:hoge)からたどります。
+
+
+ 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+
+
+def message_verifier(verifier_name)
+  message_verifiers[verifier_name] # :hogeを渡す
+end
+
+def message_verifiers
+  @message_verifiers ||=
+    ActiveSupport::MessageVerifiers.new do |salt, secret_key_base: self.secret_key_base|
+      key_generator(secret_key_base).generate_key(salt)
+    end.rotate_defaults
+end
+
+
+https://github.com/rails/rails/blob/v8.1.2/railties/lib/rails/application.rb#L238-L240
+https://github.com/rails/rails/blob/v8.1.2/railties/lib/rails/application.rb#L210-L215"><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Posts","item":"https://dev.saito.page/posts/"},{"@type":"ListItem","position":2,"name":"ActiveSupport::MessageVerifierの実装を読む","item":"https://dev.saito.page/posts/2026-02-07/"}]}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BlogPosting","headline":"ActiveSupport::MessageVerifierの実装を読む","name":"ActiveSupport::MessageVerifierの実装を読む","description":"MessageVerifierは、RailsのActiveSupportライブラリに含まれるクラスで、データの署名と検証を行うために使用されます。これにより、データが改ざんされていないことを保証できます。以下に、ActiveSupport::MessageVerifierの実装を簡単に説明します。\n1 2 3 4 5 6 7 8 verifier = Rails.application.message_verifier(:hoge) token = verifier.generate(\u0026#39;aiueo\u0026#39;, expires_in: 1.hour) =\u0026gt; \u0026#34;eyJfcmF...--bead...\u0026#34; verifier.verify(token) =\u0026gt; \u0026#34;aiueo\u0026#34; verifier.verify(\u0026#39;kakikukeko\u0026#39;) =\u0026gt; mismatched digest (ActiveSupport::MessageVerifier::InvalidSignature) これがどういう仕組みなのか、実装を追いかけてみます。\nなおrails8.1.2時点のコードを参照しています。\nコードリーディング Rails.application.message_verifier Rails.application.message_verifier(:hoge)からたどります。\n1 2 3 4 5 6 7 8 9 10 def message_verifier(verifier_name) message_verifiers[verifier_name] # :hogeを渡す end def message_verifiers @message_verifiers ||= ActiveSupport::MessageVerifiers.new do |salt, secret_key_base: self.secret_key_base| key_generator(secret_key_base).generate_key(salt) end.rotate_defaults end https://github.com/rails/rails/blob/v8.1.2/railties/lib/rails/application.rb#L238-L240 https://github.com/rails/rails/blob/v8.1.2/railties/lib/rails/application.rb#L210-L215\n","keywords":["rails"],"articleBody":"MessageVerifierは、RailsのActiveSupportライブラリに含まれるクラスで、データの署名と検証を行うために使用されます。これにより、データが改ざんされていないことを保証できます。以下に、ActiveSupport::MessageVerifierの実装を簡単に説明します。\n1 2 3 4 5 6 7 8 verifier = Rails.application.message_verifier(:hoge) token = verifier.generate('aiueo', expires_in: 1.hour) =\u003e \"eyJfcmF...--bead...\" verifier.verify(token) =\u003e \"aiueo\" verifier.verify('kakikukeko') =\u003e mismatched digest (ActiveSupport::MessageVerifier::InvalidSignature) これがどういう仕組みなのか、実装を追いかけてみます。\nなおrails8.1.2時点のコードを参照しています。\nコードリーディング Rails.application.message_verifier Rails.application.message_verifier(:hoge)からたどります。\n1 2 3 4 5 6 7 8 9 10 def message_verifier(verifier_name) message_verifiers[verifier_name] # :hogeを渡す end def message_verifiers @message_verifiers ||= ActiveSupport::MessageVerifiers.new do |salt, secret_key_base: self.secret_key_base| key_generator(secret_key_base).generate_key(salt) end.rotate_defaults end https://github.com/rails/rails/blob/v8.1.2/railties/lib/rails/application.rb#L238-L240 https://github.com/rails/rails/blob/v8.1.2/railties/lib/rails/application.rb#L210-L215\n1 2 3 4 5 6 7 8 9 10 11 def initialize(\u0026secret_generator) raise ArgumentError, \"A secret generator block is required\" unless secret_generator @secret_generator = secret_generator @rotate_options = [] @on_rotation = nil @codecs = {} end def [](salt) @codecs[salt] ||= build_with_rotations(salt) # :hogeをsaltに渡す end https://github.com/rails/rails/blob/v8.1.2/activesupport/lib/active_support/messages/rotation_coordinator.rb#L10-L16 https://github.com/rails/rails/blob/v8.1.2/activesupport/lib/active_support/messages/rotation_coordinator.rb#L18-L20\n1 2 3 4 5 def build(salt, secret_generator:, secret_generator_options:, **options) # ここでsalt=:hogeとsecret_key_baseが渡る # secret_generaterorはRails.application.message_verifiersのブロック MessageVerifier.new(secret_generator.call(salt, **secret_generator_options), **options) end https://github.com/rails/rails/blob/v8.1.2/activesupport/lib/active_support/message_verifiers.rb#L185-L187\n1 2 3 4 5 def key_generator(secret_key_base = self.secret_key_base) @key_generators[secret_key_base] ||= ActiveSupport::CachingKeyGenerator.new( ActiveSupport::KeyGenerator.new(secret_key_base, iterations: 1000) ) end https://github.com/rails/rails/blob/v8.1.2/railties/lib/rails/application.rb#L174-L180\n1 2 3 4 def generate_key(salt, key_size = 64) # 1000回ハッシュをかけて鍵を生成するため少し重めな処理 OpenSSL::PKCS5.pbkdf2_hmac(@secret, salt, @iterations, key_size, @hash_digest_class.new) end https://github.com/rails/rails/blob/v8.1.2/activesupport/lib/active_support/key_generator.rb#L41-L43\nここまでで、verifier = Rails.application.message_verifier(:hoge)が完了し、MessageVerifierインスタンスが生成されました。 この時点で、以下のことが行われています。\nsecret_key_baseから鍵が生成されている saltに:hogeが設定されている pbkdf2_hmacで複数回ハッシュ化された鍵が生成されている generate 次に、verifier.generate('aiueo')を見ていきます。\n1 2 3 4 5 6 7 def generate(value, **options) create_message(value, **options) end def create_message(value, **options) # :nodoc: sign_encoded(encode(serialize_with_metadata(value, **options))) end https://github.com/rails/rails/blob/v8.1.2/activesupport/lib/active_support/message_verifier.rb#L306-L312\n1 2 3 def encode(data, url_safe: @url_safe) url_safe ? ::Base64.urlsafe_encode64(data, padding: false) : ::Base64.strict_encode64(data) end https://github.com/rails/rails/blob/v8.1.2/activesupport/lib/active_support/messages/codec.rb#L25-L27\n1 2 3 4 5 6 7 8 def sign_encoded(encoded) digest = generate_digest(encoded) encoded \u003c\u003c SEPARATOR \u003c\u003c digest end def generate_digest(data) OpenSSL::HMAC.hexdigest(@digest, @secret, data) end https://github.com/rails/rails/blob/v8.1.2/activesupport/lib/active_support/message_verifier.rb#L330-L333 https://github.com/rails/rails/blob/v8.1.2/activesupport/lib/active_support/message_verifier.rb#L352C1-L354\ndigestのデフォルトはSHA1です。 secretはOpenSSL::PKCS5.pbkdf2_hmac(@secret, salt, @iterations, key_size, @hash_digest_class.new)で生成した派生鍵です。\n最終的に、BASE64エンコードされたデータとHMAC署名が--で連結されて返されます。 前半部分はデコード可能なので、ユーザーが簡単に知ることができます。 が、HMAC署名はsecret_key_baseとソルトを知らないと生成できないため、データの改ざんを防止できます。\nまとめ インスタンス生成時に、secret_key_baseとソルトから派生鍵を生成している 決定論的な入出力関係にある generate時に、データをBASE64エンコードし、HMAC署名を付与している データストアを使用していないので、ステートレス おまけ 冒頭のコードはこんな形でdecodeできます。\n1 2 3 4 5 verifier = Rails.application.message_verifier(:hoge) token = verifier.generate('aiueo', expires_in: 1.hour) =\u003e \"eyJfcmF...--bead...\" ::Base64.strict_decode64(\"eyJfcmFpbHMiOnsiZGF0YSI6ImFpdWVvIiwiZXhwIjoiMjAyNi0wMi0wN1QwODo0NDozMS44NzhaIn19\") =\u003e \"{\\\"_rails\\\":{\\\"data\\\":\\\"aiueo\\\",\\\"exp\\\":\\\"2026-02-07T08:44:31.878Z\\\"}}\" ","wordCount":"271","inLanguage":"en","datePublished":"2026-02-07T11:14:25+09:00","dateModified":"2026-02-07T11:14:25+09:00","author":{"@type":"Person","name":"ksaito"},"mainEntityOfPage":{"@type":"WebPage","@id":"https://dev.saito.page/posts/2026-02-07/"},"publisher":{"@type":"Organization","name":"ksaito.dev","logo":{"@type":"ImageObject","url":"https://dev.saito.page/favicon.ico"}}}</script></head><body id=top><script>localStorage.getItem("pref-theme")==="dark"?document.body.classList.add("dark"):localStorage.getItem("pref-theme")==="light"?document.body.classList.remove("dark"):window.matchMedia("(prefers-color-scheme: dark)").matches&&document.body.classList.add("dark")</script><header class=header><nav class=nav><div class=logo><a href=https://dev.saito.page/ accesskey=h title="ksaito.dev (Alt + H)">ksaito.dev</a><div class=logo-switches><button id=theme-toggle accesskey=t title="(Alt + T)" aria-label="Toggle theme">
+<svg id="moon" width="24" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+<svg id="sun" width="24" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button></div></div><ul id=menu><li><a href=https://dev.saito.page/archives/ title=Archives><span>Archives</span></a></li><li><a href=https://dev.saito.page/search/ title="Search (Alt + /)" accesskey=/><span>Search</span></a></li><li><a href=https://dev.saito.page/tags/ title=Tags><span>Tags</span></a></li></ul></nav></header><main class=main><article class=post-single><header class=post-header><div class=breadcrumbs><a href=https://dev.saito.page/>Home</a>&nbsp;»&nbsp;<a href=https://dev.saito.page/posts/>Posts</a></div><h1 class="post-title entry-hint-parent">ActiveSupport::MessageVerifierの実装を読む</h1><div class=post-meta><span title='2026-02-07 11:14:25 +0900 JST'>2026-02-07</span>&nbsp;·&nbsp;2 min&nbsp;·&nbsp;ksaito</div></header><div class=toc><details><summary accesskey=c title="(Alt + C)"><span class=details>Table of Contents</span></summary><div class=inner><nav id=TableOfContents><ul><li><a href=#コードリーディング>コードリーディング</a><ul><li><a href=#railsapplicationmessage_verifier>Rails.application.message_verifier</a></li><li><a href=#generate>generate</a></li></ul></li><li><a href=#まとめ>まとめ</a></li><li><a href=#おまけ>おまけ</a></li></ul></nav></div></details></div><div class=post-content><p>MessageVerifierは、RailsのActiveSupportライブラリに含まれるクラスで、データの署名と検証を行うために使用されます。これにより、データが改ざんされていないことを保証できます。以下に、ActiveSupport::MessageVerifierの実装を簡単に説明します。</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">8
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-ruby data-lang=ruby><span style=display:flex><span>verifier <span style=color:#f92672>=</span> <span style=color:#66d9ef>Rails</span><span style=color:#f92672>.</span>application<span style=color:#f92672>.</span>message_verifier(<span style=color:#e6db74>:hoge</span>)
+</span></span><span style=display:flex><span>token <span style=color:#f92672>=</span> verifier<span style=color:#f92672>.</span>generate(<span style=color:#e6db74>&#39;aiueo&#39;</span>, <span style=color:#e6db74>expires_in</span>: <span style=color:#ae81ff>1</span><span style=color:#f92672>.</span>hour)
+</span></span><span style=display:flex><span><span style=color:#f92672>=&gt;</span> <span style=color:#e6db74>&#34;eyJfcmF...--bead...&#34;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>verifier<span style=color:#f92672>.</span>verify(token)
+</span></span><span style=display:flex><span><span style=color:#f92672>=&gt;</span> <span style=color:#e6db74>&#34;aiueo&#34;</span>
+</span></span><span style=display:flex><span>verifier<span style=color:#f92672>.</span>verify(<span style=color:#e6db74>&#39;kakikukeko&#39;</span>)
+</span></span><span style=display:flex><span><span style=color:#f92672>=&gt;</span> mismatched digest (<span style=color:#66d9ef>ActiveSupport</span><span style=color:#f92672>::</span><span style=color:#66d9ef>MessageVerifier</span><span style=color:#f92672>::</span><span style=color:#66d9ef>InvalidSignature</span>)
+</span></span></code></pre></td></tr></table></div></div><p>これがどういう仕組みなのか、実装を追いかけてみます。</p><p>なおrails8.1.2時点のコードを参照しています。</p><h2 id=コードリーディング>コードリーディング<a hidden class=anchor aria-hidden=true href=#コードリーディング>#</a></h2><h3 id=railsapplicationmessage_verifier>Rails.application.message_verifier<a hidden class=anchor aria-hidden=true href=#railsapplicationmessage_verifier>#</a></h3><p><code>Rails.application.message_verifier(:hoge)</code>からたどります。</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-ruby data-lang=ruby><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>message_verifier</span>(verifier_name)
+</span></span><span style=display:flex><span>  message_verifiers<span style=color:#f92672>[</span>verifier_name<span style=color:#f92672>]</span> <span style=color:#75715e># :hogeを渡す</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>end</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>message_verifiers</span>
+</span></span><span style=display:flex><span>  @message_verifiers <span style=color:#f92672>||=</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>ActiveSupport</span><span style=color:#f92672>::</span><span style=color:#66d9ef>MessageVerifiers</span><span style=color:#f92672>.</span>new <span style=color:#66d9ef>do</span> <span style=color:#f92672>|</span>salt, <span style=color:#e6db74>secret_key_base</span>: self<span style=color:#f92672>.</span>secret_key_base<span style=color:#f92672>|</span>
+</span></span><span style=display:flex><span>      key_generator(secret_key_base)<span style=color:#f92672>.</span>generate_key(salt)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>end</span><span style=color:#f92672>.</span>rotate_defaults
+</span></span><span style=display:flex><span><span style=color:#66d9ef>end</span>
+</span></span></code></pre></td></tr></table></div></div><p><a href=https://github.com/rails/rails/blob/v8.1.2/railties/lib/rails/application.rb#L238-L240>https://github.com/rails/rails/blob/v8.1.2/railties/lib/rails/application.rb#L238-L240</a>
+<a href=https://github.com/rails/rails/blob/v8.1.2/railties/lib/rails/application.rb#L210-L215>https://github.com/rails/rails/blob/v8.1.2/railties/lib/rails/application.rb#L210-L215</a></p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-ruby data-lang=ruby><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>initialize</span>(<span style=color:#f92672>&amp;</span>secret_generator)
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>raise</span> <span style=color:#66d9ef>ArgumentError</span>, <span style=color:#e6db74>&#34;A secret generator block is required&#34;</span> <span style=color:#66d9ef>unless</span> secret_generator
+</span></span><span style=display:flex><span>  @secret_generator <span style=color:#f92672>=</span> secret_generator
+</span></span><span style=display:flex><span>  @rotate_options <span style=color:#f92672>=</span> <span style=color:#f92672>[]</span>
+</span></span><span style=display:flex><span>  @on_rotation <span style=color:#f92672>=</span> <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>  @codecs <span style=color:#f92672>=</span> {}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>end</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>[]</span>(salt)
+</span></span><span style=display:flex><span>  @codecs<span style=color:#f92672>[</span>salt<span style=color:#f92672>]</span> <span style=color:#f92672>||=</span> build_with_rotations(salt) <span style=color:#75715e># :hogeをsaltに渡す</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>end</span>
+</span></span></code></pre></td></tr></table></div></div><p><a href=https://github.com/rails/rails/blob/v8.1.2/activesupport/lib/active_support/messages/rotation_coordinator.rb#L10-L16>https://github.com/rails/rails/blob/v8.1.2/activesupport/lib/active_support/messages/rotation_coordinator.rb#L10-L16</a>
+<a href=https://github.com/rails/rails/blob/v8.1.2/activesupport/lib/active_support/messages/rotation_coordinator.rb#L18-L20>https://github.com/rails/rails/blob/v8.1.2/activesupport/lib/active_support/messages/rotation_coordinator.rb#L18-L20</a></p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">5
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-ruby data-lang=ruby><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>build</span>(salt, <span style=color:#e6db74>secret_generator</span>:, <span style=color:#e6db74>secret_generator_options</span>:, <span style=color:#f92672>**</span>options)
+</span></span><span style=display:flex><span>  <span style=color:#75715e># ここでsalt=:hogeとsecret_key_baseが渡る</span>
+</span></span><span style=display:flex><span>  <span style=color:#75715e># secret_generaterorはRails.application.message_verifiersのブロック</span>
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>MessageVerifier</span><span style=color:#f92672>.</span>new(secret_generator<span style=color:#f92672>.</span>call(salt, <span style=color:#f92672>**</span>secret_generator_options), <span style=color:#f92672>**</span>options)
+</span></span><span style=display:flex><span><span style=color:#66d9ef>end</span>
+</span></span></code></pre></td></tr></table></div></div><p><a href=https://github.com/rails/rails/blob/v8.1.2/activesupport/lib/active_support/message_verifiers.rb#L185-L187>https://github.com/rails/rails/blob/v8.1.2/activesupport/lib/active_support/message_verifiers.rb#L185-L187</a></p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">5
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-ruby data-lang=ruby><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>key_generator</span>(secret_key_base <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>secret_key_base)
+</span></span><span style=display:flex><span>  @key_generators<span style=color:#f92672>[</span>secret_key_base<span style=color:#f92672>]</span> <span style=color:#f92672>||=</span> <span style=color:#66d9ef>ActiveSupport</span><span style=color:#f92672>::</span><span style=color:#66d9ef>CachingKeyGenerator</span><span style=color:#f92672>.</span>new(
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>ActiveSupport</span><span style=color:#f92672>::</span><span style=color:#66d9ef>KeyGenerator</span><span style=color:#f92672>.</span>new(secret_key_base, <span style=color:#e6db74>iterations</span>: <span style=color:#ae81ff>1000</span>)
+</span></span><span style=display:flex><span>  )
+</span></span><span style=display:flex><span><span style=color:#66d9ef>end</span>
+</span></span></code></pre></td></tr></table></div></div><p><a href=https://github.com/rails/rails/blob/v8.1.2/railties/lib/rails/application.rb#L174-L180>https://github.com/rails/rails/blob/v8.1.2/railties/lib/rails/application.rb#L174-L180</a></p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">4
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-ruby data-lang=ruby><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>generate_key</span>(salt, key_size <span style=color:#f92672>=</span> <span style=color:#ae81ff>64</span>)
+</span></span><span style=display:flex><span>  <span style=color:#75715e># 1000回ハッシュをかけて鍵を生成するため少し重めな処理</span>
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>OpenSSL</span><span style=color:#f92672>::</span><span style=color:#66d9ef>PKCS5</span><span style=color:#f92672>.</span>pbkdf2_hmac(@secret, salt, @iterations, key_size, @hash_digest_class<span style=color:#f92672>.</span>new)
+</span></span><span style=display:flex><span><span style=color:#66d9ef>end</span>
+</span></span></code></pre></td></tr></table></div></div><p><a href=https://github.com/rails/rails/blob/v8.1.2/activesupport/lib/active_support/key_generator.rb#L41-L43>https://github.com/rails/rails/blob/v8.1.2/activesupport/lib/active_support/key_generator.rb#L41-L43</a></p><p>ここまでで、<code>verifier = Rails.application.message_verifier(:hoge)</code>が完了し、MessageVerifierインスタンスが生成されました。
+この時点で、以下のことが行われています。</p><ul><li>secret_key_baseから鍵が生成されている</li><li>saltに:hogeが設定されている</li><li>pbkdf2_hmacで複数回ハッシュ化された鍵が生成されている</li></ul><h3 id=generate>generate<a hidden class=anchor aria-hidden=true href=#generate>#</a></h3><p>次に、<code>verifier.generate('aiueo')</code>を見ていきます。</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">7
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-ruby data-lang=ruby><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>generate</span>(value, <span style=color:#f92672>**</span>options)
+</span></span><span style=display:flex><span>  create_message(value, <span style=color:#f92672>**</span>options)
+</span></span><span style=display:flex><span><span style=color:#66d9ef>end</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>create_message</span>(value, <span style=color:#f92672>**</span>options) <span style=color:#75715e># :nodoc:</span>
+</span></span><span style=display:flex><span>  sign_encoded(encode(serialize_with_metadata(value, <span style=color:#f92672>**</span>options)))
+</span></span><span style=display:flex><span><span style=color:#66d9ef>end</span>
+</span></span></code></pre></td></tr></table></div></div><p><a href=https://github.com/rails/rails/blob/v8.1.2/activesupport/lib/active_support/message_verifier.rb#L306-L312>https://github.com/rails/rails/blob/v8.1.2/activesupport/lib/active_support/message_verifier.rb#L306-L312</a></p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">3
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-ruby data-lang=ruby><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>encode</span>(data, <span style=color:#e6db74>url_safe</span>: @url_safe)
+</span></span><span style=display:flex><span>  url_safe ? <span style=color:#f92672>::</span><span style=color:#66d9ef>Base64</span><span style=color:#f92672>.</span>urlsafe_encode64(data, <span style=color:#e6db74>padding</span>: <span style=color:#66d9ef>false</span>) : <span style=color:#f92672>::</span><span style=color:#66d9ef>Base64</span><span style=color:#f92672>.</span>strict_encode64(data)
+</span></span><span style=display:flex><span><span style=color:#66d9ef>end</span>
+</span></span></code></pre></td></tr></table></div></div><p><a href=https://github.com/rails/rails/blob/v8.1.2/activesupport/lib/active_support/messages/codec.rb#L25-L27>https://github.com/rails/rails/blob/v8.1.2/activesupport/lib/active_support/messages/codec.rb#L25-L27</a></p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">8
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-ruby data-lang=ruby><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>sign_encoded</span>(encoded)
+</span></span><span style=display:flex><span>  digest <span style=color:#f92672>=</span> generate_digest(encoded)
+</span></span><span style=display:flex><span>  encoded <span style=color:#f92672>&lt;&lt;</span> <span style=color:#66d9ef>SEPARATOR</span> <span style=color:#f92672>&lt;&lt;</span> digest
+</span></span><span style=display:flex><span><span style=color:#66d9ef>end</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>generate_digest</span>(data)
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>OpenSSL</span><span style=color:#f92672>::</span><span style=color:#66d9ef>HMAC</span><span style=color:#f92672>.</span>hexdigest(@digest, @secret, data)
+</span></span><span style=display:flex><span><span style=color:#66d9ef>end</span>
+</span></span></code></pre></td></tr></table></div></div><p><a href=https://github.com/rails/rails/blob/v8.1.2/activesupport/lib/active_support/message_verifier.rb#L330-L333>https://github.com/rails/rails/blob/v8.1.2/activesupport/lib/active_support/message_verifier.rb#L330-L333</a>
+<a href=https://github.com/rails/rails/blob/v8.1.2/activesupport/lib/active_support/message_verifier.rb#L352C1-L354>https://github.com/rails/rails/blob/v8.1.2/activesupport/lib/active_support/message_verifier.rb#L352C1-L354</a></p><p><code>digest</code>のデフォルトはSHA1です。
+<code>secret</code>は<code>OpenSSL::PKCS5.pbkdf2_hmac(@secret, salt, @iterations, key_size, @hash_digest_class.new)</code>で生成した派生鍵です。</p><p>最終的に、BASE64エンコードされたデータとHMAC署名が<code>--</code>で連結されて返されます。
+前半部分はデコード可能なので、ユーザーが簡単に知ることができます。
+が、HMAC署名はsecret_key_baseとソルトを知らないと生成できないため、データの改ざんを防止できます。</p><h2 id=まとめ>まとめ<a hidden class=anchor aria-hidden=true href=#まとめ>#</a></h2><ul><li>インスタンス生成時に、secret_key_baseとソルトから派生鍵を生成している<ul><li>決定論的な入出力関係にある</li></ul></li><li>generate時に、データをBASE64エンコードし、HMAC署名を付与している</li><li>データストアを使用していないので、ステートレス</li></ul><h2 id=おまけ>おまけ<a hidden class=anchor aria-hidden=true href=#おまけ>#</a></h2><p>冒頭のコードはこんな形でdecodeできます。</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">5
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-ruby data-lang=ruby><span style=display:flex><span>verifier <span style=color:#f92672>=</span> <span style=color:#66d9ef>Rails</span><span style=color:#f92672>.</span>application<span style=color:#f92672>.</span>message_verifier(<span style=color:#e6db74>:hoge</span>)
+</span></span><span style=display:flex><span>token <span style=color:#f92672>=</span> verifier<span style=color:#f92672>.</span>generate(<span style=color:#e6db74>&#39;aiueo&#39;</span>, <span style=color:#e6db74>expires_in</span>: <span style=color:#ae81ff>1</span><span style=color:#f92672>.</span>hour)
+</span></span><span style=display:flex><span><span style=color:#f92672>=&gt;</span> <span style=color:#e6db74>&#34;eyJfcmF...--bead...&#34;</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>::</span><span style=color:#66d9ef>Base64</span><span style=color:#f92672>.</span>strict_decode64(<span style=color:#e6db74>&#34;eyJfcmFpbHMiOnsiZGF0YSI6ImFpdWVvIiwiZXhwIjoiMjAyNi0wMi0wN1QwODo0NDozMS44NzhaIn19&#34;</span>)
+</span></span><span style=display:flex><span><span style=color:#f92672>=&gt;</span> <span style=color:#e6db74>&#34;{</span><span style=color:#ae81ff>\&#34;</span><span style=color:#e6db74>_rails</span><span style=color:#ae81ff>\&#34;</span><span style=color:#e6db74>:{</span><span style=color:#ae81ff>\&#34;</span><span style=color:#e6db74>data</span><span style=color:#ae81ff>\&#34;</span><span style=color:#e6db74>:</span><span style=color:#ae81ff>\&#34;</span><span style=color:#e6db74>aiueo</span><span style=color:#ae81ff>\&#34;</span><span style=color:#e6db74>,</span><span style=color:#ae81ff>\&#34;</span><span style=color:#e6db74>exp</span><span style=color:#ae81ff>\&#34;</span><span style=color:#e6db74>:</span><span style=color:#ae81ff>\&#34;</span><span style=color:#e6db74>2026-02-07T08:44:31.878Z</span><span style=color:#ae81ff>\&#34;</span><span style=color:#e6db74>}}&#34;</span>
+</span></span></code></pre></td></tr></table></div></div></div><footer class=post-footer><ul class=post-tags><li><a href=https://dev.saito.page/tags/rails/>Rails</a></li></ul><nav class=paginav><a class=next href=https://dev.saito.page/posts/2025-11-15/><span class=title>Next »</span><br><span>GCSのsigned policy documentsでフォルダごとアップロードする</span></a></nav><ul class=share-buttons><li><a target=_blank rel="noopener noreferrer" aria-label="share ActiveSupport::MessageVerifierの実装を読む on x" href="https://x.com/intent/tweet/?text=ActiveSupport%3a%3aMessageVerifier%e3%81%ae%e5%ae%9f%e8%a3%85%e3%82%92%e8%aa%ad%e3%82%80&amp;url=https%3a%2f%2fdev.saito.page%2fposts%2f2026-02-07%2f&amp;hashtags=rails"><svg viewBox="0 0 512 512" height="30" width="30" fill="currentColor"><path d="M512 62.554V449.446C512 483.97 483.97 512 449.446 512H62.554C28.03 512 0 483.97.0 449.446V62.554C0 28.03 28.029.0 62.554.0H449.446C483.971.0 512 28.03 512 62.554zM269.951 190.75 182.567 75.216H56L207.216 272.95 63.9 436.783h61.366L235.9 310.383l96.667 126.4H456L298.367 228.367l134-153.151H371.033zM127.633 110h36.468l219.38 290.065H349.5z"/></svg></a></li><li><a target=_blank rel="noopener noreferrer" aria-label="share ActiveSupport::MessageVerifierの実装を読む on reddit" href="https://reddit.com/submit?url=https%3a%2f%2fdev.saito.page%2fposts%2f2026-02-07%2f&title=ActiveSupport%3a%3aMessageVerifier%e3%81%ae%e5%ae%9f%e8%a3%85%e3%82%92%e8%aa%ad%e3%82%80"><svg viewBox="0 0 512 512" height="30" width="30" fill="currentColor"><path d="M449.446.0C483.971.0 512 28.03 512 62.554v386.892C512 483.97 483.97 512 449.446 512H62.554c-34.524.0-62.554-28.03-62.554-62.554V62.554c0-34.524 28.029-62.554 62.554-62.554h386.892zM446 265.638c0-22.964-18.616-41.58-41.58-41.58-11.211.0-21.361 4.457-28.841 11.666-28.424-20.508-67.586-33.757-111.204-35.278l18.941-89.121 61.884 13.157c.756 15.734 13.642 28.29 29.56 28.29 16.407.0 29.706-13.299 29.706-29.701.0-16.403-13.299-29.702-29.706-29.702-11.666.0-21.657 6.792-26.515 16.578l-69.105-14.69c-1.922-.418-3.939-.042-5.585 1.036-1.658 1.073-2.811 2.761-3.224 4.686l-21.152 99.438c-44.258 1.228-84.046 14.494-112.837 35.232-7.468-7.164-17.589-11.591-28.757-11.591-22.965.0-41.585 18.616-41.585 41.58.0 16.896 10.095 31.41 24.568 37.918-.639 4.135-.99 8.328-.99 12.576.0 63.977 74.469 115.836 166.33 115.836s166.334-51.859 166.334-115.836c0-4.218-.347-8.387-.977-12.493 14.564-6.47 24.735-21.034 24.735-38.001zM326.526 373.831c-20.27 20.241-59.115 21.816-70.534 21.816-11.428.0-50.277-1.575-70.522-21.82-3.007-3.008-3.007-7.882.0-10.889 3.003-2.999 7.882-3.003 10.885.0 12.777 12.781 40.11 17.317 59.637 17.317 19.522.0 46.86-4.536 59.657-17.321 3.016-2.999 7.886-2.995 10.885.008 3.008 3.011 3.003 7.882-.008 10.889zm-5.23-48.781c-16.373.0-29.701-13.324-29.701-29.698.0-16.381 13.328-29.714 29.701-29.714 16.378.0 29.706 13.333 29.706 29.714.0 16.374-13.328 29.698-29.706 29.698zM160.91 295.348c0-16.381 13.328-29.71 29.714-29.71 16.369.0 29.689 13.329 29.689 29.71.0 16.373-13.32 29.693-29.689 29.693-16.386.0-29.714-13.32-29.714-29.693z"/></svg></a></li></ul></footer></article></main><footer class=footer><span>&copy; 2026 <a href=https://dev.saito.page/>ksaito.dev</a></span> ·
+<span>Powered by
+<a href=https://gohugo.io/ rel="noopener noreferrer" target=_blank>Hugo</a> &
+<a href=https://github.com/adityatelange/hugo-PaperMod/ rel=noopener target=_blank>PaperMod</a></span></footer><a href=#top aria-label="go to top" title="Go to Top (Alt + G)" class=top-link id=top-link accesskey=g><svg viewBox="0 0 12 6" fill="currentColor"><path d="M12 6H0l6-6z"/></svg>
+</a><script>let menu=document.getElementById("menu");menu&&(menu.scrollLeft=localStorage.getItem("menu-scroll-position"),menu.onscroll=function(){localStorage.setItem("menu-scroll-position",menu.scrollLeft)}),document.querySelectorAll('a[href^="#"]').forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();var t=this.getAttribute("href").substr(1);window.matchMedia("(prefers-reduced-motion: reduce)").matches?document.querySelector(`[id='${decodeURIComponent(t)}']`).scrollIntoView():document.querySelector(`[id='${decodeURIComponent(t)}']`).scrollIntoView({behavior:"smooth"}),t==="top"?history.replaceState(null,null," "):history.pushState(null,null,`#${t}`)})})</script><script>var mybutton=document.getElementById("top-link");window.onscroll=function(){document.body.scrollTop>800||document.documentElement.scrollTop>800?(mybutton.style.visibility="visible",mybutton.style.opacity="1"):(mybutton.style.visibility="hidden",mybutton.style.opacity="0")}</script><script>document.getElementById("theme-toggle").addEventListener("click",()=>{document.body.className.includes("dark")?(document.body.classList.remove("dark"),localStorage.setItem("pref-theme","light")):(document.body.classList.add("dark"),localStorage.setItem("pref-theme","dark"))})</script><script>document.querySelectorAll("pre > code").forEach(e=>{const n=e.parentNode.parentNode,t=document.createElement("button");t.classList.add("copy-code"),t.innerHTML="copy";function s(){t.innerHTML="copied!",setTimeout(()=>{t.innerHTML="copy"},2e3)}t.addEventListener("click",t=>{if("clipboard"in navigator){navigator.clipboard.writeText(e.textContent),s();return}const n=document.createRange();n.selectNodeContents(e);const o=window.getSelection();o.removeAllRanges(),o.addRange(n);try{document.execCommand("copy"),s()}catch{}o.removeRange(n)}),n.classList.contains("highlight")?n.appendChild(t):n.parentNode.firstChild==n||(e.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName=="TABLE"?e.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(t):e.parentNode.appendChild(t))})</script></body></html>
